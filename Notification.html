@@ -4353,6 +4353,12 @@
                     <h1>Courier Management</h1>
                 </div>
                 <div class="metrics-controls">
+                    <button class="btn" id="logoutBtn" style="display:none" onclick="logout()">
+                        <svg class="ico">
+                            <use href="#i-user" />
+                        </svg>
+                        <span>Logout</span>
+                    </button>
                     <button class="btn" id="metricsDateBtn">
                         <svg class="ico">
                             <use href="#i-calendar" />
@@ -9273,6 +9279,7 @@
             const localSession = localStorage.getItem('session_user');
             if (localSession) {
                 document.getElementById('authOverlay').style.display = 'none';
+                document.getElementById('logoutBtn').style.display = 'flex';
                 // Trigger Load
                 if (typeof refreshTableAndMetrics === 'function') refreshTableAndMetrics();
                 return;
@@ -9282,10 +9289,19 @@
             firebase.auth().onAuthStateChanged(user => {
                 if (user) {
                     document.getElementById('authOverlay').style.display = 'none';
+                    document.getElementById('logoutBtn').style.display = 'flex';
                     if (typeof refreshTableAndMetrics === 'function') refreshTableAndMetrics();
                 } else {
                     document.getElementById('authOverlay').style.display = 'flex';
+                    document.getElementById('logoutBtn').style.display = 'none';
                 }
+            });
+        }
+
+        function logout() {
+            firebase.auth().signOut().then(() => {
+                localStorage.removeItem('session_user');
+                window.location.reload();
             });
         }
 
