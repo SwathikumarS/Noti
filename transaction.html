@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions - Courier Management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="firebase-config.js"></script>
+
+    <style>
+        :root {
+            --primary: #16a34a;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #1e293b;
+            --text-sub: #64748b;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            margin: 0;
+            padding-bottom: 80px;
+            color: var(--text);
+        }
+
+        .header {
+            background: var(--surface);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .refresh-btn {
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .txn-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .txn-card {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .txn-left {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .txn-id {
+            font-size: 12px;
+            color: var(--text-sub);
+            font-family: monospace;
+        }
+
+        .txn-time {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        .txn-right {
+            text-align: right;
+        }
+
+        .txn-amount {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .txn-status {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-top: 4px;
+        }
+
+        .status-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-pending {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .status-failed {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Navbar */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 0;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-sub);
+            text-decoration: none;
+            font-size: 11px;
+            font-weight: 600;
+            width: 33%;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-icon {
+            width: 24px;
+            height: 24px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-sub);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>Transactions (Today)</h1>
+        <button class="refresh-btn" onclick="fetchTransactions()">Refresh</button>
+    </div>
+
+    <div class="container">
+        <div id="txnList" class="txn-list">
+            <div class="empty-state">Loading transactions...</div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <a href="shipment.html" class="nav-item">
+            <svg class="nav-icon">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            Home
+        </a>
+        <a href="transaction.html" class="nav-item active">
+            <svg class="nav-icon">
+                <line x1="8" y1="6" x2="21" y2="6"></line>
+                <line x1="8" y1="12" x2="21" y2="12"></line>
+                <line x1="8" y1="18" x2="21" y2="18"></line>
+                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+            </svg>
+            Transactions
+        </a>
+        <a href="account.html" class="nav-item">
+            <svg class="nav-icon">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            Account
+        </a>
+    </div>
+
+    <script>
+        // Copy SCRIPT_URL from Notification.html
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_d_c9Oa-7t0GfbouXyEwK29oPb4d2lJ0iLw3E8O77kZ4J7k-S3X9x-c5H4h7h5y6z/exec';
+
+        function init() {
+            // Check Auth
+            const localUser = localStorage.getItem('session_user');
+
+            if (localUser) {
+                fetchTransactions();
+                return;
+            }
+
+            firebase.auth().onAuthStateChanged(user => {
+                if (!user) {
+                    window.location.href = 'index.html';
+                } else {
+                    fetchTransactions();
+                }
+            });
+        }
+
+        function fetchTransactions() {
+            const list = document.getElementById('txnList');
+            list.innerHTML = '<div class="empty-state">Loading...</div>';
+
+            const today = new Date().toISOString().split('T')[0];
+
+            // Use 'search' action to get rows
+            fetch(SCRIPT_URL + '?action=search&startDate=' + today + '&endDate=' + today)
+                .then(r => r.json())
+                .then(data => {
+                    // API returns { rows: [...], total: ... }
+                    // rows is array of arrays: [sheetRow, timestamp, recipient, ..., txnid(index 15), ..., status(index 17)]
+                    if (data.rows && data.rows.length > 0) {
+                        renderTransactions(data.rows);
+                    } else {
+                        list.innerHTML = '<div class="empty-state">No transactions found for today.</div>';
+                    }
+                })
+                .catch(e => {
+                    console.error(e);
+                    list.innerHTML = '<div class="empty-state">Failed to load.</div>';
+                });
+        }
+
+        function renderTransactions(rows) {
+            const list = document.getElementById('txnList');
+            if (!rows || rows.length === 0) {
+                list.innerHTML = '<div class="empty-state">No transactions found for today.</div>';
+                return;
+            }
+
+            list.innerHTML = '';
+
+            rows.forEach(row => {
+                // row structure from handleSearch:
+                // Index 0: SheetRow
+                // Index 1: Timestamp (Col A)
+                // Index 11: Order Value (Col K) -> Wait, logic says index 10 in sheet, but row slice adds sheetRow at 0.
+                // Let's verify: handleSearch maps item.row.slice().
+                // item.row is [A, B, C...].
+                // So row[1] is A.
+                // TxnID is Col O (Index 14 in sheet -> Index 15 in row with sheetRow prepended).
+                // Status is Col Q (Index 16 in sheet -> Index 17).
+                // Amount is Col K (Index 10 in sheet -> Index 11).
+
+                const time = formatTime(row[1]);
+                const txnid = row[15] || 'Pending';
+                const amount = row[11] || '0';
+                const status = (row[17] || 'Pending').toUpperCase();
+
+                const colorClass = (status === 'SUCCESS' || status === 'PAID') ? 'status-success' :
+                    (status === 'FAILED' ? 'status-failed' : 'status-pending');
+
+                const html = `
+                <div class="txn-card">
+                    <div class="txn-left">
+                        <div class="txn-id">#${txnid}</div>
+                        <div class="txn-time">${time}</div>
+                    </div>
+                    <div class="txn-right">
+                        <div class="txn-amount">₹${amount}</div>
+                        <div class="txn-status ${colorClass}">${status}</div>
+                    </div>
+                </div>
+               `;
+                list.innerHTML += html;
+            });
+        }
+
+        function formatTime(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            if (isNaN(d)) return iso;
+            return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+
+</html>
