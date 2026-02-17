@@ -24,9 +24,26 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTitle = payload.notification.title || 'New Notification';
   const notificationOptions = {
     body: payload.notification.body,
-    icon: 'icon-192.png', // Ensure this exists in root
+    icon: 'DMS-192.png', // Ensure this exists in root
     data: payload.data
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// === PWA STANDARD HANDLERS ===
+
+self.addEventListener('install', (event) => {
+  console.log('[Service Worker] Installing Service Worker ...', event);
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  console.log('[Service Worker] Activating Service Worker ...', event);
+  return self.clients.claim();
+});
+
+self.addEventListener('fetch', (event) => {
+  // Basic Pass-through fetch handler to allow PWA installation
+  event.respondWith(fetch(event.request));
 });
